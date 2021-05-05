@@ -1,4 +1,7 @@
 use clap::Clap;
+mod tensors;
+use tensors::Vec3;
+mod conversions;
 
 #[derive(Clap, Debug)]
 struct Args {
@@ -8,11 +11,11 @@ struct Args {
 struct InputImage {
     pub width: usize,
     pub height: usize,
-    pub data: Vec<[f32; 3]>,
+    pub data: Vec<Vec3>,
 }
 
 impl InputImage {
-    fn new(width: usize, height: usize, data: Vec<[f32; 3]>) -> Self {
+    fn new(width: usize, height: usize, data: Vec<Vec3>) -> Self {
         Self {
             width,
             height,
@@ -28,13 +31,13 @@ fn main() {
     let input_image = exr::prelude::read_first_rgba_layer_from_file(
         &input_file_name,
         |width_height, _channels| {
-            let px = [0f32, 0f32, 0f32];
+            let px = Vec3::new(0f32, 0f32, 0f32);
             let data = vec![px; width_height.width() * width_height.height()];
             let img = InputImage::new(width_height.width(), width_height.height(), data);
             img
         },
         |img, xy, (r, g, b, _a): (f32, f32, f32, f32)| {
-            img.data[xy.x() + img.width * xy.y()] = [r, g, b];
+            img.data[xy.x() + img.width * xy.y()] = Vec3::new(r, g, b);
         },
     )
     .expect("error decoding input .exr file")
@@ -42,7 +45,7 @@ fn main() {
     .channel_data
     .pixels;
     let mut output_image = vec![0u8; input_image.width * input_image.height * 3];
-    do_the_convertion(
+    conversions::do_the_convertion(
         input_image.width,
         input_image.height,
         &input_image.data,
@@ -57,5 +60,3 @@ fn main() {
     )
     .expect("error saving output file");
 }
-
-fn do_the_convertion(width: usize, height: usize, input: &[[f32; 3]], output: &mut [u8]) -> () {}
